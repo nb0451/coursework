@@ -31,7 +31,7 @@ In summary You only need to deliver your zipped `.git` folder! Make sure you mak
 
 ---
 ## **Assessment Criteria**
-Task 1 is worth a total of **20** marks. This is assessed according to the following four criteria:
+Task 1 is worth a total of **20** marks. This is assessed according to the following two criteria:
 - Consistency of commits 
 - Evidence of software engineering principles 
 

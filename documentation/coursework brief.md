@@ -25,10 +25,15 @@ The courswork involves deliverables in both Python and C (for Arduino). A brief 
 
 | # | task | deliverable | mark |
 |---|---|---|---|
-| [Part 1](part_1.md) | Use of GiT for source control and management   | GiT Repo       | 25 |
+| [Part 1](part_1.md) | Use of GiT for source control and management   | GiT Repo       | 20 |
 | [Part 2](part_2.md) | Sensor optimisation problem with Arduino       | Code           | 30 |
 | [Part 3](part_3.md) | A Python robot delivery optimisation           | Code / KPIs    | 30 |
-| [Part 4](part_4.md) | Data analytics and visualisation               | Graphical files| 15 |
+| [Part 4](part_4.md) | Data analytics and visualisation               | Graphical files| 20 |
+
+## **Use of AI**
+You are permitted to use AI to assist your writing of code. The key challenge is to solve the problems set before you and _prompt engineering_ is a skill in it its own right.  The use permitted use of AI means that the bar for a strong submission is higher. You should study the code quality brief and ensure all your code meets the requirements.
+
+Use of AI for large delivery of code solution should be documented in your commit message history and possibly readme markdown files.
 
 ## **Software requirements**
 For the execution and delivery of this coursework you should install require
@@ -58,12 +63,13 @@ If you have another preferred IDE you may use it. Note however :
 > 
 >* Download your initial setup folder from the Learn Coursework section. This is available as a zip file `25WSA032_Coursework.zip`.
 >* Install (unzip) this folder to a suitable location, ideally in your personal OneDrive folder for your student university account. 
->* Check your folder and expected contents are all present as shown below
+>* Check your folder and expected contents are all present as shown below (Fig. 1)
 >* Rename the folder so it is preceded by your student id as in the example below.
 
 Renaming now will ensure your folder is submission ready.
-
+```
 📁 B123456_25WSA032_Coursework
+├── 📁 .git* 
 ├── 📁 arduino   
 │   └── 📁 arduino task
 ├── 📁 documents  
@@ -75,7 +81,11 @@ Renaming now will ensure your folder is submission ready.
 ├── 📁 robots  
 │   └── 📁 ecosystem
 │       └── 📄 ecosystem.py  
-└── 📄 README.md  
+└── 📄 README.md 
+```
+<div align="center">Figure 1. coursework folder structure and key files</div>
+
+\* Note, only after converting your coursework folder in to a repo using the sourcecode tool in VSCode, will a .git folder appear. If it does not appear you have selected the wrong folder in VSCode.
 
 
 
