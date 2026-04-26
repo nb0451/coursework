@@ -19,3 +19,5 @@ void loop()
   Serial.println(temperature);
   delay(100);
 }
+
+// Learnt and understood - 24 April - 26 April
