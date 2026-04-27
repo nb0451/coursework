@@ -64,3 +64,6 @@ void loop()
 
   delay(5000);
 }
+
+
+//26-27 April: Added collect_temperature_data function
