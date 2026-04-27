@@ -1,9 +1,0 @@
-CW Notes 
-
-Save code and push to github:
-git status
-git add .
-git commit - m "message"
-git push
-
-
