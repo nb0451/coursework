@@ -67,3 +67,4 @@ void loop()
 
 
 //26-27 April: Added collect_temperature_data function
+//27-28 April: Learnt DFT theory
