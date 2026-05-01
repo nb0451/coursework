@@ -3,6 +3,11 @@
 #define LOG_SAMPLES 180      // Stores 3 minutes of data (1 Hz sampling)
 #define DFT_SAMPLES 32       // Smaller window for DFT to fit SRAM limits
 
+// Power mode constants (int for embedded simplicity)
+#define MODE_ACTIVE 0
+#define MODE_IDLE 1
+#define MODE_POWER_DOWN 2
+
 const int B = 4275000;       // B value of the thermistor
 const int R0 = 100000;       // R0 = 100k
 const int pinTempSensor = A0; // Grove - Temperature Sensor connect to A0
@@ -18,6 +23,8 @@ static float freqOut[DFT_SAMPLES];
 int collect_temperature_data(unsigned long duration);
 float* apply_dft(float* data, int N, float fs, float* magOut);
 void send_data_to_pc(float* timeData, float* tempData, float* freqData, float* magData, int N);
+int decide_power_mode(float dominantFreq, float currentTemp);
+
 
 void setup()
 {
@@ -108,6 +115,48 @@ void send_data_to_pc(float* timeData, float* tempData, float* freqData, float* m
   }
 }
 
+int decide_power_mode(float dominantFreq, float currentTemp) {
+  static int powerDownCycles = 0;  // Persists across loop() calls
+  static float lastTemp = 0.0;     // Tracks previous sample for fluctuation detection
+  const float FLUCTUATION_THRESHOLD = 1.5; // °C change to force ACTIVE
+  const int PERSISTENCE_LIMIT = 5;         // Cycles required for POWER_DOWN
+
+  // 1. Sudden fluctuation override (per brief requirement)
+  if (lastTemp != 0.0) { // Skip comparison on very first cycle
+    float delta = fabs(currentTemp - lastTemp);
+    if (delta > FLUCTUATION_THRESHOLD) {
+      powerDownCycles = 0; // Reset persistence counter
+      lastTemp = currentTemp;
+      return MODE_ACTIVE;
+    }
+  }
+  lastTemp = currentTemp;
+
+  // 2. Frequency-based baseline mode selection
+  int targetMode;
+  if (dominantFreq > 0.5) {
+    targetMode = MODE_ACTIVE;
+    powerDownCycles = 0;
+  } else if (dominantFreq > 0.1) {
+    targetMode = MODE_IDLE;
+    powerDownCycles = 0;
+  } else {
+    targetMode = MODE_POWER_DOWN;
+  }
+
+  // 3. Apply 5-cycle persistence rule for POWER_DOWN
+  if (targetMode == MODE_POWER_DOWN) {
+    powerDownCycles++;
+    if (powerDownCycles >= PERSISTENCE_LIMIT) {
+      return MODE_POWER_DOWN;
+    } else {
+      return MODE_IDLE; // Hold in IDLE until persistence threshold met
+    }
+  }
+
+  return targetMode;
+}
+
 void loop()
 {
   // Collects 3 minutes of temperature data
@@ -146,6 +195,28 @@ void loop()
   
   // Sends combined CSV output
   send_data_to_pc(timeData, &tempData[dftStart], frequencies, magnitude, N);
+
+    // Find dominant frequency (skip k=0 DC component)
+  int dominantK = 1;
+  float maxMag = 0.0;
+  for (int k = 1; k < N; k++) {
+    if (magnitude[k] > maxMag) {
+      maxMag = magnitude[k];
+      dominantK = k;
+    }
+  }
+  float dominantFreq = frequencies[dominantK];
+  
+  // Get latest valid temperature for fluctuation check
+  float currentTemp = tempData[totalSamples - 1];
+  if (currentTemp <= -999.0) currentTemp = 25.0; // Fallback if last sample invalid
+
+  // Decide and log power mode
+  int currentMode = decide_power_mode(dominantFreq, currentTemp);
+  Serial.print("Mode: ");
+  if (currentMode == MODE_ACTIVE) Serial.println("ACTIVE");
+  else if (currentMode == MODE_IDLE) Serial.println("IDLE");
+  else Serial.println("POWER_DOWN");
 
   delay(5000); // Waits before next full cycle
 }
