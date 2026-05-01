@@ -1,7 +1,7 @@
 #include <math.h>
 
-#define LOG_SAMPLES 180      // Stores 3 minutes of data
-#define DFT_SAMPLES 32       // Smaller window for DFT
+#define LOG_SAMPLES 180      // Stores 3 minutes of data (1 Hz sampling)
+#define DFT_SAMPLES 32       // Smaller window for DFT to fit SRAM limits
 
 const int B = 4275000;       // B value of the thermistor
 const int R0 = 100000;       // R0 = 100k
@@ -67,6 +67,8 @@ int collect_temperature_data(unsigned long duration)
 
 // Applies Discrete Fourier Transform to window of data
 float* apply_dft(float* data, int N, float fs, float* magOut) {
+  if (N > DFT_SAMPLES) return NULL;
+
   // Loop through each frequency bin
   for (int k = 0; k < N; k++) {
     realPart[k] = 0.0; // Resets real accumulator
@@ -74,9 +76,14 @@ float* apply_dft(float* data, int N, float fs, float* magOut) {
 
     // Sums contributions from all time samples
     for (int n = 0; n < N; n++) {
+      float sample = data[n];
+      if (sample <= -999.0) sample = 0.0;
+
       float angle = 2.0 * PI * k * n / N; // Computes phase angle
-      realPart[k] += data[n] * cos(angle); // Real component (cosine)
-      imagPart[k] -= data[n] * sin(angle); // Imaginary component (sine)
+      float cosVal = cos(angle);
+      float sinVal = sin(angle);
+      realPart[k] += sample * cosVal; // Real component (cosine)
+      imagPart[k] -= sample * sinVal; // Imaginary component (sine)
     }
 
     // Computes magnitude of complex result
@@ -98,16 +105,31 @@ void loop()
   int dftStart = totalSamples - DFT_SAMPLES;
   if (dftStart < 0) dftStart = 0; // Ensures valid index
   
+  int N = (totalSamples < DFT_SAMPLES) ? totalSamples : DFT_SAMPLES;
+
+  float dftInput[DFT_SAMPLES];
+
+  float mean = 0;
+  for (int i = 0; i < N; i++) mean += tempData[dftStart + i];
+  mean /= N;
+
+  for (int i = 0; i < N; i++)
+  {
+    float val = tempData[dftStart + i];
+    if (val <= -999.0) val = 0.0;
+    dftInput[i] = val - mean;
+  }
+  
   float magnitude[DFT_SAMPLES]; // Buffer for DFT magnitudes
   float samplingFreq = 1.0;     // Sampling frequency (1 Hz)
   
   // Performs DFT on selected window
-  float* frequencies = apply_dft(&tempData[dftStart], DFT_SAMPLES, samplingFreq, magnitude);
+  float* frequencies = apply_dft(dftInput, N, samplingFreq, magnitude);
   
   // Outputs frequency spectrum
   Serial.println("--- DFT Results ---");
   Serial.println("Index,Freq(Hz),Magnitude");
-  for (int k = 1; k < DFT_SAMPLES; k++) {
+  for (int k = 1; k < N; k++) {
     Serial.print(k);
     Serial.print(",");
     Serial.print(frequencies[k], 4);
