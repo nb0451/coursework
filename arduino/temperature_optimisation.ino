@@ -149,3 +149,5 @@ void loop()
 
   delay(5000); // Waits before next full cycle
 }
+
+//All functions tested and correct - 1 May
