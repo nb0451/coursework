@@ -14,6 +14,7 @@ Usage purpose and timestamps of my use of AI will be well documented here. I wil
 26 April: Ensure logic steps are correct for creating collect_temperature_data function. 
 27 April: Check and debug code for collect_temperature_data 
 30 April: Used AI to generate apply_dft function based on logical steps made and following prompt requirements
+1 May: Used AI to implement send_data_to_pc function 
 
 ## MARCH COMMITS STATEMENT
 

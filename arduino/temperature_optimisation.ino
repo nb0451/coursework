@@ -17,6 +17,7 @@ static float freqOut[DFT_SAMPLES];
 
 int collect_temperature_data(unsigned long duration);
 float* apply_dft(float* data, int N, float fs, float* magOut);
+void send_data_to_pc(float* timeData, float* tempData, float* freqData, float* magData, int N);
 
 void setup()
 {
@@ -96,6 +97,17 @@ float* apply_dft(float* data, int N, float fs, float* magOut) {
   return freqOut; // Returns pointer to frequency array
 }
 
+void send_data_to_pc(float* timeData, float* tempData, float* freqData, float* magData, int N) {
+  Serial.println("Time(s),Temperature(C),Frequency(Hz),Magnitude");
+  for (int i = 0; i < N; i++) {
+    if (tempData[i] <= -999.0) continue;
+    Serial.print(timeData[i], 2); Serial.print(",");
+    Serial.print(tempData[i], 2); Serial.print(",");
+    Serial.print(freqData[i], 4); Serial.print(",");
+    Serial.println(magData[i], 4);
+  }
+}
+
 void loop()
 {
   // Collects 3 minutes of temperature data
@@ -126,26 +138,14 @@ void loop()
   // Performs DFT on selected window
   float* frequencies = apply_dft(dftInput, N, samplingFreq, magnitude);
   
-  // Outputs frequency spectrum
-  Serial.println("--- DFT Results ---");
-  Serial.println("Index,Freq(Hz),Magnitude");
-  for (int k = 1; k < N; k++) {
-    Serial.print(k);
-    Serial.print(",");
-    Serial.print(frequencies[k], 4);
-    Serial.print(",");
-    Serial.println(magnitude[k], 4);
+  // Generates time array for the DFT window
+  float timeData[DFT_SAMPLES];
+  for (int i = 0; i < N; i++) {
+    timeData[i] = (float)i / samplingFreq;
   }
-  Serial.println("--- End DFT ---");
-
-  // Outputs collected temperature data
-  for (int i = 0; i < totalSamples; i++)
-  {
-    if (tempData[i] <= -999.0) continue;
-    
-    Serial.print("temperature = ");
-    Serial.println(tempData[i]);
-  }
+  
+  // Sends combined CSV output
+  send_data_to_pc(timeData, &tempData[dftStart], frequencies, magnitude, N);
 
   delay(5000); // Waits before next full cycle
 }
