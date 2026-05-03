@@ -20,7 +20,7 @@ static float imagPart[DFT_SAMPLES];
 static float freqOut[DFT_SAMPLES];
 
 
-int collect_temperature_data(unsigned long duration);
+int collect_temperature_data(unsigned long duration, float samplingRateHz);
 float* apply_dft(float* data, int N, float fs, float* magOut);
 void send_data_to_pc(float* timeData, float* tempData, float* freqData, float* magData, int N);
 int decide_power_mode(float dominantFreq, float currentTemp);
@@ -32,19 +32,20 @@ void setup()
 }
 
 // Collects temperature data at 1 Hz for a given duration
-int collect_temperature_data(unsigned long duration)
+int collect_temperature_data(unsigned long duration, float samplingRateHz)
 {
   unsigned long startTime = millis();       // Records start time
   unsigned long lastSampleTime = startTime; // Tracks last sample time
   int index = 0;
+  unsigned long intervalMs = (unsigned long)(1000.0 / samplingRateHz);
 
   // Continues until duration reached/buffer full
   while ((millis() - startTime < duration) && (index < LOG_SAMPLES))
   {
     unsigned long currentTime = millis();
 
-    // Enforces 1 Hz sampling interval
-    if (currentTime - lastSampleTime >= 1000)
+    // Enforces dynamic sampling interval
+    if (currentTime - lastSampleTime >= intervalMs)
     {
       int a = analogRead(pinTempSensor); // Reads raw ADC value
 
@@ -62,7 +63,7 @@ int collect_temperature_data(unsigned long duration)
       }
 
       index++;                 // Moves to next storage index
-      lastSampleTime += 1000;  // Maintains precise 1 Hz timing
+      lastSampleTime += intervalMs;  // Maintains precise dynamic timing
     }
     else
     {
@@ -160,7 +161,7 @@ int decide_power_mode(float dominantFreq, float currentTemp) {
 void loop()
 {
   // Collects 3 minutes of temperature data
-  int totalSamples = collect_temperature_data(180000);
+  int totalSamples = collect_temperature_data(60000, 1.0);
 
   // Selects most recent window for DFT processing
   int dftStart = totalSamples - DFT_SAMPLES;
