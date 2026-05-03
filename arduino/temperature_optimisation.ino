@@ -188,18 +188,14 @@ void loop()
   }
   
   float magnitude[DFT_SAMPLES]; // Buffer for DFT magnitudes
-  float samplingFreq = 1.0;     // Sampling frequency (1 Hz)
   
-  // Performs DFT on selected window
-  float* frequencies = apply_dft(dftInput, N, samplingFreq, magnitude);
+  float* frequencies = apply_dft(dftInput, N, currentFs, magnitude);
   
-  // Generates time array for the DFT window
   float timeData[DFT_SAMPLES];
   for (int i = 0; i < N; i++) {
-    timeData[i] = (float)i / samplingFreq;
+    timeData[i] = (float)i / currentFs;
   }
   
-  // Sends combined CSV output
   send_data_to_pc(timeData, &tempData[dftStart], frequencies, magnitude, N);
 
   int dominantK = 1;
@@ -243,6 +239,11 @@ void loop()
     }
   }
   lastTemp = currentTemp;
+  
+  float targetFs = 2.0 * dominantFreq;
+  if (targetFs < 0.5) targetFs = 0.5;
+  if (targetFs > 4.0) targetFs = 4.0;
+  currentFs = targetFs;
   
   Serial.print("Mode: ");
   if (currentMode == MODE_ACTIVE) Serial.println("ACTIVE");
