@@ -160,10 +160,15 @@ int decide_power_mode(float dominantFreq, float currentTemp) {
 
 void loop()
 {
-  // Collects 3 minutes of temperature data
-  int totalSamples = collect_temperature_data(60000, 1.0);
+  static float currentFs = 1.0;
+  static int idleCycles = 0;
+  static float lastTemp = 0.0;
+  
+  const float STABILITY_THRESHOLD = 2.0;
+  const float FLUCTUATION_DELTA = 1.5;
+  
+  int totalSamples = collect_temperature_data(60000, currentFs);
 
-  // Selects most recent window for DFT processing
   int dftStart = totalSamples - DFT_SAMPLES;
   if (dftStart < 0) dftStart = 0; // Ensures valid index
   
@@ -197,7 +202,6 @@ void loop()
   // Sends combined CSV output
   send_data_to_pc(timeData, &tempData[dftStart], frequencies, magnitude, N);
 
-    // Find dominant frequency (skip k=0 DC component)
   int dominantK = 1;
   float maxMag = 0.0;
   for (int k = 1; k < N; k++) {
@@ -208,12 +212,38 @@ void loop()
   }
   float dominantFreq = frequencies[dominantK];
   
-  // Get latest valid temperature for fluctuation check
+  float variation = 0.0;
+  float lastValid = -999.0;
+  for (int i = 0; i < N; i++) {
+    if (tempData[dftStart + i] > -999.0) {
+      if (lastValid > -999.0) {
+        variation += fabs(tempData[dftStart + i] - lastValid);
+      }
+      lastValid = tempData[dftStart + i];
+    }
+  }
+  
   float currentTemp = tempData[totalSamples - 1];
   if (currentTemp <= -999.0) currentTemp = 25.0; // Fallback if last sample invalid
 
-  // Decide and log power mode
-  int currentMode = decide_power_mode(dominantFreq, currentTemp);
+  int currentMode = MODE_IDLE;
+  
+  if (lastTemp != 0.0 && fabs(currentTemp - lastTemp) > FLUCTUATION_DELTA) {
+    currentMode = MODE_ACTIVE;
+    idleCycles = 0;
+  }
+  else if (variation > STABILITY_THRESHOLD) {
+    currentMode = MODE_ACTIVE;
+    idleCycles = 0;
+  } else {
+    currentMode = MODE_IDLE;
+    idleCycles++;
+    if (idleCycles >= 5) {
+      currentMode = MODE_POWER_DOWN;
+    }
+  }
+  lastTemp = currentTemp;
+  
   Serial.print("Mode: ");
   if (currentMode == MODE_ACTIVE) Serial.println("ACTIVE");
   else if (currentMode == MODE_IDLE) Serial.println("IDLE");
