@@ -23,7 +23,7 @@ static float freqOut[DFT_SAMPLES];
 int collect_temperature_data(unsigned long duration, float samplingRateHz);
 float* apply_dft(float* data, int N, float fs, float* magOut);
 void send_data_to_pc(float* timeData, float* tempData, float* freqData, float* magData, int N);
-int decide_power_mode(float dominantFreq, float currentTemp);
+int decide_power_mode(float dominantFreq, float predictedVariation, float currentTemp, float lastTemp, int* idleCycles);
 
 
 void setup()
@@ -116,46 +116,44 @@ void send_data_to_pc(float* timeData, float* tempData, float* freqData, float* m
   }
 }
 
-int decide_power_mode(float dominantFreq, float currentTemp) {
-  static int powerDownCycles = 0;  // Persists across loop() calls
-  static float lastTemp = 0.0;     // Tracks previous sample for fluctuation detection
-  const float FLUCTUATION_THRESHOLD = 1.5; // °C change to force ACTIVE
-  const int PERSISTENCE_LIMIT = 5;         // Cycles required for POWER_DOWN
+int decide_power_mode(float dominantFreq, float predictedVariation, float currentTemp, float lastTemp, int* idleCycles) {
+  const float FLUCTUATION_DELTA = 1.5;
+  const float TREND_HIGH = 2.5;
+  const float TREND_MODERATE = 1.5;
+  const int PERSISTENCE_LIMIT = 5;
 
-  // 1. Sudden fluctuation override (per brief requirement)
-  if (lastTemp != 0.0) { // Skip comparison on very first cycle
-    float delta = fabs(currentTemp - lastTemp);
-    if (delta > FLUCTUATION_THRESHOLD) {
-      powerDownCycles = 0; // Reset persistence counter
-      lastTemp = currentTemp;
-      return MODE_ACTIVE;
-    }
+  // 1. Sudden fluctuation override (highest priority)
+  if (lastTemp != 0.0 && fabs(currentTemp - lastTemp) > FLUCTUATION_DELTA) {
+    *idleCycles = 0;
+    return MODE_ACTIVE;
   }
-  lastTemp = currentTemp;
-
-  // 2. Frequency-based baseline mode selection
-  int targetMode;
-  if (dominantFreq > 0.5) {
-    targetMode = MODE_ACTIVE;
-    powerDownCycles = 0;
-  } else if (dominantFreq > 0.1) {
-    targetMode = MODE_IDLE;
-    powerDownCycles = 0;
-  } else {
-    targetMode = MODE_POWER_DOWN;
+  // 2. Frequency-based baseline selection
+  else if (dominantFreq > 0.5) {
+    *idleCycles = 0;
+    return MODE_ACTIVE;
   }
-
-  // 3. Apply 5-cycle persistence rule for POWER_DOWN
-  if (targetMode == MODE_POWER_DOWN) {
-    powerDownCycles++;
-    if (powerDownCycles >= PERSISTENCE_LIMIT) {
+  else if (dominantFreq > 0.1) {
+    *idleCycles = 0;
+    return MODE_IDLE;
+  }
+  // 3. Trend-based decision using moving average prediction
+  else if (predictedVariation > TREND_HIGH) {
+    *idleCycles = 0;
+    return MODE_ACTIVE;
+  }
+  else if (predictedVariation > TREND_MODERATE) {
+    *idleCycles = 0;
+    return MODE_IDLE;
+  }
+  // 4. Low variation: apply 5-cycle persistence for POWER_DOWN (final fallback)
+  else {
+    (*idleCycles)++;
+    if (*idleCycles >= PERSISTENCE_LIMIT) {
       return MODE_POWER_DOWN;
     } else {
-      return MODE_IDLE; // Hold in IDLE until persistence threshold met
+      return MODE_IDLE;
     }
   }
-
-  return targetMode;
 }
 
 void loop()
@@ -163,9 +161,9 @@ void loop()
   static float currentFs = 1.0;
   static int idleCycles = 0;
   static float lastTemp = 0.0;
-  
-  const float STABILITY_THRESHOLD = 2.0;
-  const float FLUCTUATION_DELTA = 1.5;
+  static float variationHistory[10];
+  static int historyIndex = 0;
+  static int historyCount = 0;
   
   int totalSamples = collect_temperature_data(60000, currentFs);
 
@@ -218,26 +216,19 @@ void loop()
       lastValid = tempData[dftStart + i];
     }
   }
+
+  variationHistory[historyIndex] = variation;
+  historyIndex = (historyIndex + 1) % 10;
+  if (historyCount < 10) historyCount++;
+
+  float predictedVariation = 0.0;
+  for (int i = 0; i < historyCount; i++) predictedVariation += variationHistory[i];
+  predictedVariation /= historyCount;
   
   float currentTemp = tempData[totalSamples - 1];
   if (currentTemp <= -999.0) currentTemp = 25.0; // Fallback if last sample invalid
 
-  int currentMode = MODE_IDLE;
-  
-  if (lastTemp != 0.0 && fabs(currentTemp - lastTemp) > FLUCTUATION_DELTA) {
-    currentMode = MODE_ACTIVE;
-    idleCycles = 0;
-  }
-  else if (variation > STABILITY_THRESHOLD) {
-    currentMode = MODE_ACTIVE;
-    idleCycles = 0;
-  } else {
-    currentMode = MODE_IDLE;
-    idleCycles++;
-    if (idleCycles >= 5) {
-      currentMode = MODE_POWER_DOWN;
-    }
-  }
+  int currentMode = decide_power_mode(dominantFreq, predictedVariation, currentTemp, lastTemp, &idleCycles);
   lastTemp = currentTemp;
   
   float targetFs = 2.0 * dominantFreq;
