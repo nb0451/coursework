@@ -49,3 +49,4 @@ while es.active:
 
   es.update()                                                                   # update when all bots have been processed and moved
 
+es.tabulate('name', 'kind', 'units_delivered', 'weight_delivered', 'distance', 'energy', 'damage', 'status', kind_class='Bot')
