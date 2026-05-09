@@ -77,3 +77,17 @@ plt.grid(True)
 plt.tight_layout()
 plt.savefig('plot4_temperature_histogram.png', dpi=150, bbox_inches='tight')
 plt.close()
+
+# Plot 5 - Temperature Change Rate vs Time
+rate = np.diff(temp) / np.diff(time)
+
+plt.figure(figsize=(10, 4))
+plt.plot(time[1:], rate, color='green', linewidth=1)
+plt.axhline(y=0, color='black', linestyle='--', linewidth=0.8)
+plt.title('Plot 5: Temperature Change Rate vs Time')
+plt.xlabel('Time (s)')
+plt.ylabel('Rate of Change (°C/s)')
+plt.grid(True)
+plt.tight_layout()
+plt.savefig('plot5_temperature_change_rate.png', dpi=150, bbox_inches='tight')
+plt.close()
