@@ -26,10 +26,15 @@ import matplotlib.pyplot as plt
 
 plt.close('all')
 
+CHARGE_THRESHOLDS = {
+    'Robot': 0.25,
+    'Droid': 0.22,
+    'Drone': 0.18
+}
+
 def run_baseline():
     es = ecofactory(robots=3, droids=3, drones=3, chargers=[55, 20], pizzas=9)
     home = [40, 20, 0]
-    charge_threshold = 0.20
 
     es.display(show=0, pause=10)
     es.duration = "2 weeks"
@@ -38,7 +43,8 @@ def run_baseline():
 
     while es.active:
         for bot in es.bots():
-            if bot.soc / bot.max_soc < charge_threshold and bot.station is None:
+            threshold = CHARGE_THRESHOLDS.get(bot.kind, 0.20)
+            if bot.soc / bot.max_soc < threshold and bot.station is None:
                 charger = es.chargers()[0]
                 bot.charge(charger)
 
