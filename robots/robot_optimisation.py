@@ -49,7 +49,7 @@ def find_nearest_pizza(bot, deliverables):
     nearest_pizza = None
     min_dist = float('inf')
     for pizza in deliverables:
-        if pizza.status == 'ready':
+        if pizza.status == 'ready' and pizza.weight <= bot.max_payload:
             dist = math.sqrt((bot.coordinates[0] - pizza.coordinates[0])**2 + (bot.coordinates[1] - pizza.coordinates[1])**2)
             if dist < min_dist:
                 min_dist = dist
@@ -116,7 +116,7 @@ def run_optimized_ecosystem():
         'damage': total_damage
     }
 
-    print("\n=== PIZZA ALLOCATION OPTIMISATION KPI RECORD ===")
+    print("\n=== PIZZA WEIGHT ALLOCATION OPTIMISATION KPI RECORD ===")
     for name, metrics in kpi_data.items():
         print(f"{name}: {metrics}")
 
@@ -124,4 +124,4 @@ def run_optimized_ecosystem():
     return kpi_data
 
 if __name__ == "__main__":
-    pizza_optimized_kpis = run_optimized_ecosystem()
+    pizza_weight_optimized_kpis = run_optimized_ecosystem()
