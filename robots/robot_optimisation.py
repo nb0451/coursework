@@ -16,6 +16,7 @@ ID: F533590
 
 import sys
 import os
+import math
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from robots.ecosystem.factory import ecofactory
@@ -27,14 +28,25 @@ import matplotlib.pyplot as plt
 plt.close('all')
 
 CHARGE_THRESHOLDS = {
-    'Robot': 0.25,
-    'Droid': 0.22,
-    'Drone': 0.18
+    'Robot': 0.18,
+    'Droid': 0.15,
+    'Drone': 0.12
 }
 
-def run_baseline():
-    es = ecofactory(robots=3, droids=3, drones=3, chargers=[55, 20], pizzas=9)
+def find_nearest_charger(bot, chargers):
+    min_dist = float('inf')
+    nearest = None
+    for charger in chargers:
+        dist = math.sqrt((bot.coordinates[0] - charger.coordinates[0])**2 + (bot.coordinates[1] - charger.coordinates[1])**2)
+        if dist < min_dist:
+            min_dist = dist
+            nearest = charger
+    return nearest
+
+def run_optimized_charging():
+    es = ecofactory(robots=3, droids=3, drones=3, chargers=[[20, 10], [60, 30], [40, 20]], pizzas=9)
     home = [40, 20, 0]
+    charger_objects = es.chargers()
 
     es.display(show=0, pause=10)
     es.duration = "2 weeks"
@@ -45,7 +57,7 @@ def run_baseline():
         for bot in es.bots():
             threshold = CHARGE_THRESHOLDS.get(bot.kind, 0.20)
             if bot.soc / bot.max_soc < threshold and bot.station is None:
-                charger = es.chargers()[0]
+                charger = find_nearest_charger(bot, charger_objects)
                 bot.charge(charger)
 
             if bot.activity == 'idle':
@@ -86,7 +98,7 @@ def run_baseline():
         'damage': total_damage
     }
 
-    print("\n=== BASELINE KPI RECORD ===")
+    print("\n=== CHARGING OPTIMISATION KPI RECORD ===")
     for name, metrics in kpi_data.items():
         print(f"{name}: {metrics}")
 
@@ -94,4 +106,4 @@ def run_baseline():
     return kpi_data
 
 if __name__ == "__main__":
-    baseline_kpis = run_baseline()
+    charging_optimized_kpis = run_optimized_charging()
