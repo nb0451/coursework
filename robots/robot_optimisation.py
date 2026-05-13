@@ -32,6 +32,8 @@ CHARGE_THRESHOLDS = {
     'Droid': 0.15,
     'Drone': 0.12
 }
+OPPORTUNISTIC_THRESHOLD = 0.40
+OPPORTUNISTIC_DISTANCE = 5.0
 
 def find_nearest_charger(bot, chargers):
     min_dist = float('inf')
@@ -43,7 +45,7 @@ def find_nearest_charger(bot, chargers):
             nearest = charger
     return nearest
 
-def run_optimized_charging():
+def run_opportunistic_charging():
     es = ecofactory(robots=3, droids=3, drones=3, chargers=[[20, 10], [60, 30], [40, 20]], pizzas=9)
     home = [40, 20, 0]
     charger_objects = es.chargers()
@@ -59,6 +61,12 @@ def run_optimized_charging():
             if bot.soc / bot.max_soc < threshold and bot.station is None:
                 charger = find_nearest_charger(bot, charger_objects)
                 bot.charge(charger)
+
+            if bot.station is None and bot.activity != 'charging':
+                nearest = find_nearest_charger(bot, charger_objects)
+                dist = math.sqrt((bot.coordinates[0] - nearest.coordinates[0])**2 + (bot.coordinates[1] - nearest.coordinates[1])**2)
+                if dist < OPPORTUNISTIC_DISTANCE and bot.soc / bot.max_soc < OPPORTUNISTIC_THRESHOLD:
+                    bot.charge(nearest)
 
             if bot.activity == 'idle':
                 for pizza in es.deliverables():
@@ -98,7 +106,7 @@ def run_optimized_charging():
         'damage': total_damage
     }
 
-    print("\n=== CHARGING OPTIMISATION KPI RECORD ===")
+    print("\n=== OPPORTUNISTIC CHARGING KPI RECORD ===")
     for name, metrics in kpi_data.items():
         print(f"{name}: {metrics}")
 
@@ -106,4 +114,4 @@ def run_optimized_charging():
     return kpi_data
 
 if __name__ == "__main__":
-    charging_optimized_kpis = run_optimized_charging()
+    opportunistic_kpis = run_opportunistic_charging()
