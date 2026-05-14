@@ -19,6 +19,22 @@ static float realPart[DFT_SAMPLES];
 static float imagPart[DFT_SAMPLES];
 static float freqOut[DFT_SAMPLES];
 
+/*
+ * Memory analysis
+ *
+ * Arduino Uno only has 2KB SRAM so this matters.
+ * tempData[180] alone costs 720 bytes (180 x 4 byte floats), the three DFT
+ * buffers add 384 bytes, variationHistory adds 40 — around 1144 bytes static.
+ * Each loop cycle also pushes dftInput, magnitude and timeData onto the stack
+ * temporarily (~384 bytes), so peak usage is roughly 1528 of 2048 bytes.
+ *
+ * realPart, imagPart and freqOut are static to avoid stack allocation inside
+ * apply_dft() every cycle.
+ *
+ * A possible improvement would be switching tempData to int16_t with x100
+ * fixed-point scaling — halves it from 720 to 360 bytes and frees up SRAM
+ * for a larger DFT window or longer buffer.
+ */
 
 int collect_temperature_data(unsigned long duration, float samplingRateHz);
 float* apply_dft(float* data, int N, float fs, float* magOut);
