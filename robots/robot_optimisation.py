@@ -123,29 +123,25 @@ def run_simulation(mode='optimized'):
     }
     return kpi_data
 
-def print_comparison(baseline, optimized):
-    base_units = baseline['fleet']['units']
-    opt_units = optimized['fleet']['units']
-    delta_units = opt_units - base_units
-    pct_units = (delta_units / base_units) * 100
-
-    base_distance = baseline['fleet']['distance']
-    opt_distance = optimized['fleet']['distance']
-    delta_distance = opt_distance - base_distance
-    pct_distance = (delta_distance / base_distance) * 100
-
-    base_energy = baseline['fleet']['energy']
-    opt_energy = optimized['fleet']['energy']
-    delta_energy = opt_energy - base_energy
-    pct_energy = (delta_energy / base_energy) * 100
-
-    print("\n=== PIZZA ALLOCATION OPTIMIZATION DELTA (2 WEEKS) ===")
+def print_kpi_report(baseline, optimized):
+    print("\n" + "="*65)
+    print("FLEET-WIDE KPI PERFORMANCE COMPARISON (2 WEEKS)")
+    print("="*65)
     print(f"{'Metric':<20} {'Baseline':<10} {'Optimized':<10} {'Delta':<10} {'% Change':<10}")
-    print(f"{'Units Delivered':<20} {base_units:<10} {opt_units:<10} {delta_units:<+10} {pct_units:+.2f}%")
-    print(f"{'Distance (units)':<20} {base_distance:<10} {opt_distance:<10} {delta_distance:<+10} {pct_distance:+.2f}%")
-    print(f"{'Energy (kWh)':<20} {base_energy:<10} {opt_energy:<10} {delta_energy:<+10} {pct_energy:+.2f}%")
+    print("-"*65)
+
+    metrics = ['units', 'weight', 'distance', 'energy', 'damage']
+    for m in metrics:
+        base_val = baseline['fleet'][m]
+        opt_val = optimized['fleet'][m]
+        delta = opt_val - base_val
+        pct = (delta / base_val) * 100 if base_val != 0 else 0.0
+
+        sign = "+" if delta > 0 else ""
+        print(f"{m.capitalize():<20} {base_val:<10} {opt_val:<10} {sign}{delta:<9.2f} {sign}{pct:.2f}%")
+    print("="*65)
 
 if __name__ == "__main__":
     baseline_kpis = run_simulation(mode='baseline')
     optimized_kpis = run_simulation(mode='optimized')
-    print_comparison(baseline_kpis, optimized_kpis)
+    print_kpi_report(baseline_kpis, optimized_kpis)
