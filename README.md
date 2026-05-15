@@ -1,6 +1,4 @@
-# READ ME
-
-# 25WSA032 Coursework — Zaid Haris (F533590)
+# README 25WSA032 Coursework - Zaid Haris (F533590)
 **This is the readme of Zaid Haris F533590 Coursework project.**
 
 This repository contains the coursework submission for 25WSA032. It covers the four tasks: Git source control, Arduino temperature optimisation, Python robot delivery optimisation, and data analytics.
