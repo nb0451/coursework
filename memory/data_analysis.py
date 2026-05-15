@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('temperature_data.csv')
+df = pd.read_csv('memory/temperature_data.csv')
 
 for i in range(1, len(df)):
     if df.loc[i, 'Time(s)'] < df.loc[i-1, 'Time(s)']:
