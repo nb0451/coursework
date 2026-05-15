@@ -38,7 +38,7 @@ Recorded 3 cycles of Arduino temperature data with manual thermal variation, per
 
 ## AI USAGE
 
-I used AI to assist with code generation throughout this project. AI usage is documented in commit messages and summarised below by date.
+I used AI to assist with code generation throughout this project. AI usage is documented in commit messages and summarised below by date. An example of a prompt I used can be found at `prompt_example.md`.
 
 27 April: Used AI to debug collect_temperature_data() for any errors
 29 April: Studied DFT theory and documented AI usage plan for apply_dft implementation
